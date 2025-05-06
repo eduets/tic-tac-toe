@@ -1,177 +1,181 @@
 /* Tic Tac Toe script */
 
-const Game = (function () {
-    const DEFAULT_NAME_PLAYER_ONE = "Player 1";
-    const DEFAULT_NAME_PLAYER_TWO = "Player 2";
-    const DEFAULT_MARK_PLAYER_ONE = 'x';
-    const DEFAULT_MARK_PLAYER_TWO = 'o';
+/* Window handler */
+const WindowHandler = (function () {
+
+    /* Game handler */
+    const Game = (function () {
+        const DEFAULT_NAME_PLAYER_ONE = "Player 1";
+        const DEFAULT_NAME_PLAYER_TWO = "Player 2";
+        const DEFAULT_MARK_PLAYER_ONE = 'x';
+        const DEFAULT_MARK_PLAYER_TWO = 'o';
+        
+        const players = []
+        let currentPlayerIndex = 0;
+        addPlayer(DEFAULT_NAME_PLAYER_ONE, DEFAULT_MARK_PLAYER_ONE);
+        addPlayer(DEFAULT_NAME_PLAYER_TWO, DEFAULT_MARK_PLAYER_TWO);
+        let isGameOver = false;
+        let winnerIndex = null;
+        
+        /* Game board handler */
+        const GameBoard = (function () {
+            const GAME_BOARD_SIZE = 3**2;
+            const EMPTY_SPOT = null;
+            const WIN_CONDITIONS = [
+                [0,1,2], [3,4,5], [6,7,8], [0,3,6],
+                [1,4,7], [2,5,8], [0,4,8], [2,4,6]
+            ]
     
-    const players = []
-    let currentPlayerIndex = 0;
-    addPlayer(DEFAULT_NAME_PLAYER_ONE, DEFAULT_MARK_PLAYER_ONE);
-    addPlayer(DEFAULT_NAME_PLAYER_TWO, DEFAULT_MARK_PLAYER_TWO);
-    let isGameOver = false;
-    let winnerIndex = null;
-
-    const GameBoard = (function () {
-        const GAME_BOARD_SIZE = 3**2;
-        const EMPTY_SPOT = null;
-        const WIN_CONDITIONS = [
-            [0,1,2], [3,4,5], [6,7,8], [0,3,6],
-            [1,4,7], [2,5,8], [0,4,8], [2,4,6]
-        ]
-
-        const gameBoardArray = [];
-        for (let i=0; i<GAME_BOARD_SIZE; i++) {
-            gameBoardArray.push(EMPTY_SPOT);
-        }
-
-        function isSpotAvailable(spotIndex) {
-            let spotAvailable = false;
-            if (gameBoardArray.length <= spotIndex) {
+            const gameBoardArray = [];
+            for (let i=0; i<GAME_BOARD_SIZE; i++) {
+                gameBoardArray.push(EMPTY_SPOT);
+            }
+    
+            function isSpotAvailable(spotIndex) {
+                let spotAvailable = false;
+                if (gameBoardArray.length <= spotIndex) {
+                    return spotAvailable;
+                }
+                if (gameBoardArray[spotIndex] === EMPTY_SPOT) {
+                    spotAvailable = true;
+                }
                 return spotAvailable;
             }
-            if (gameBoardArray[spotIndex] === EMPTY_SPOT) {
-                spotAvailable = true;
+    
+            function reset() {
+                for (let i=0; i<GAME_BOARD_SIZE; i++) {
+                    gameBoardArray[i] = EMPTY_SPOT;
+                }
             }
-            return spotAvailable;
-        }
-
-        function reset() {
-            for (let i=0; i<GAME_BOARD_SIZE; i++) {
-                gameBoardArray[i] = EMPTY_SPOT;
+    
+            function markSpot(spotIndex, mark) {
+                let markSuccess = false;
+                if (isSpotAvailable(spotIndex)) {
+                    gameBoardArray[spotIndex] = mark;
+                    markSuccess = true;
+                }
+                return markSuccess;
             }
-        }
-
-        function markSpot(spotIndex, mark) {
-            let markSuccess = false;
-            if (isSpotAvailable(spotIndex)) {
-                gameBoardArray[spotIndex] = mark;
-                markSuccess = true;
-            }
-            return markSuccess;
-        }
-
-        function isWinConditionMet(mark) {
-            let winConditionMet = false;
-            for (let i=0; i<WIN_CONDITIONS.length; i++) {
-                let coincidences = 0;
-                for (let j=0; j<WIN_CONDITIONS.length; j++) {
-                    if (!(gameBoardArray[WIN_CONDITIONS[i][j]] === mark)) {
+    
+            function isWinConditionMet(mark) {
+                let winConditionMet = false;
+                for (let i=0; i<WIN_CONDITIONS.length; i++) {
+                    let coincidences = 0;
+                    for (let j=0; j<WIN_CONDITIONS.length; j++) {
+                        if (!(gameBoardArray[WIN_CONDITIONS[i][j]] === mark)) {
+                            break;
+                        } else {
+                            coincidences += 1;
+                        }
+                    }
+                    if (coincidences === WIN_CONDITIONS[i].length) {
+                        winConditionMet = true;
                         break;
-                    } else {
-                        coincidences += 1;
                     }
                 }
-                if (coincidences === WIN_CONDITIONS[i].length) {
-                    winConditionMet = true;
-                    break;
+                return winConditionMet;
+            }
+    
+            function isBoardFull() {
+                let boardFull = false;
+                if (!gameBoardArray.includes(EMPTY_SPOT)) {
+                    boardFull = true;
                 }
+                return boardFull;
             }
-            return winConditionMet;
-        }
-
-        function isBoardFull() {
-            let boardFull = false;
-            if (!gameBoardArray.includes(EMPTY_SPOT)) {
-                boardFull = true;
+    
+            function getGameBoardArray() {
+                return gameBoardArray;
             }
-            return boardFull;
+    
+            return { reset, markSpot, isWinConditionMet, isBoardFull, getGameBoardArray };
+        })();
+    
+        function createPlayer(name, mark) {
+            return { name, mark };
         }
-
+    
+        function addPlayer(name, mark) {
+            const newPlayer = createPlayer(name, mark);
+            players.push(newPlayer);
+        }
+    
+        function modifyPlayerName(playerIndex, newPlayerName) {
+            if (players.length <= playerIndex) {
+                throw Error("Player index doesn't exist");
+            }
+    
+            players[playerIndex].name = newPlayerName;
+        }
+    
+        function getCurrentPlayerName() {
+            return players[currentPlayerIndex].name;
+        }
+    
+        function reset() {
+            GameBoard.reset();
+            isGameOver = false;
+            currentPlayerIndex = 0;
+            winnerIndex = null;
+        }
+    
+        function startGame(playerOneName, playerTwoName) {
+            reset();
+            modifyPlayerName(0, playerOneName);
+            modifyPlayerName(1, playerTwoName);
+        }
+    
+        function setNextCurrentPlayer() {
+            currentPlayerIndex += 1;
+            if (currentPlayerIndex >= players.length) {
+                currentPlayerIndex = 0;
+            }
+        }
+    
+        function getCurrentPlayerMark () {
+            return players[currentPlayerIndex].mark;
+        }
+    
+        function markSpot(spotIndex) {
+            const currentPlayerMark = getCurrentPlayerMark();
+    
+            if (isGameOver) {
+                return;
+            }
+    
+            const markSuccess = GameBoard.markSpot(spotIndex, currentPlayerMark)
+            if (!markSuccess) {
+                return
+            }
+    
+            if (GameBoard.isWinConditionMet(currentPlayerMark)) {
+                isGameOver = true;
+                winnerIndex = currentPlayerIndex;
+            } else if (GameBoard.isBoardFull()) {
+                isGameOver = true;
+            } else {
+                setNextCurrentPlayer();
+            }
+    
+            return isGameOver;
+        }
+    
         function getGameBoardArray() {
-            return gameBoardArray;
+            return GameBoard.getGameBoardArray();
         }
-
-        return { reset, markSpot, isWinConditionMet, isBoardFull, getGameBoardArray };
+    
+        function getWinnerName() {
+            let winnerName = null;
+            if (winnerIndex !== null) {
+                winnerName = players[winnerIndex].name;
+            }
+            return winnerName;
+        }
+    
+        return { startGame, markSpot, getCurrentPlayerName, getGameBoardArray, getWinnerName };
     })();
 
-    function createPlayer(name, mark) {
-        return { name, mark };
-    }
 
-    function addPlayer(name, mark) {
-        const newPlayer = createPlayer(name, mark);
-        players.push(newPlayer);
-    }
-
-    function modifyPlayerName(playerIndex, newPlayerName) {
-        if (players.length <= playerIndex) {
-            throw Error("Player index doesn't exist");
-        }
-
-        players[playerIndex].name = newPlayerName;
-    }
-
-    function getCurrentPlayerName() {
-        return players[currentPlayerIndex].name;
-    }
-
-    function reset() {
-        GameBoard.reset();
-        isGameOver = false;
-        currentPlayerIndex = 0;
-        winnerIndex = null;
-    }
-
-    function startGame(playerOneName, playerTwoName) {
-        reset();
-        modifyPlayerName(0, playerOneName);
-        modifyPlayerName(1, playerTwoName);
-    }
-
-    function setNextCurrentPlayer() {
-        currentPlayerIndex += 1;
-        if (currentPlayerIndex >= players.length) {
-            currentPlayerIndex = 0;
-        }
-    }
-
-    function getCurrentPlayerMark () {
-        return players[currentPlayerIndex].mark;
-    }
-
-    function markSpot(spotIndex) {
-        const currentPlayerMark = getCurrentPlayerMark();
-
-        if (isGameOver) {
-            return;
-        }
-
-        const markSuccess = GameBoard.markSpot(spotIndex, currentPlayerMark)
-        if (!markSuccess) {
-            return
-        }
-
-        if (GameBoard.isWinConditionMet(currentPlayerMark)) {
-            isGameOver = true;
-            winnerIndex = currentPlayerIndex;
-        } else if (GameBoard.isBoardFull()) {
-            isGameOver = true;
-        } else {
-            setNextCurrentPlayer();
-        }
-
-        return isGameOver;
-    }
-
-    function getGameBoardArray() {
-        return GameBoard.getGameBoardArray();
-    }
-
-    function getWinnerName() {
-        let winnerName = null;
-        if (winnerIndex !== null) {
-            winnerName = players[winnerIndex].name;
-        }
-        return winnerName;
-    }
-
-    return { startGame, markSpot, getCurrentPlayerName, getGameBoardArray, getWinnerName };
-})();
-
-
-const WindowHandler = (function () {
     const DEFAULT_MARK_PLAYER_ONE = 'x';
     const DEFAULT_MARK_PLAYER_TWO = 'o';
 
@@ -184,6 +188,8 @@ const WindowHandler = (function () {
 
     const turnInfo = document.querySelector('.turn-info');
     const results = document.querySelector('.results');
+
+    const formPlayerNames = document.querySelector('#form-player-names');
 
     function setEnableSpotButtons(enable) {
         for (let i=0; i<spotButtons.length; i++) {
@@ -274,7 +280,11 @@ const WindowHandler = (function () {
     }
 
     buttonStart.addEventListener('click', (event) => {
+        if (!formPlayerNames.checkValidity()) {
+            return;
+        }
         event.preventDefault();
+        
         unblockGame();
     });
 
